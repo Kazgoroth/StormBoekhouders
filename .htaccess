@@ -1,0 +1,100 @@
+# =====================================================================
+# Storm Boekhouders: Apache / Plesk configuratie (oktober 2026)
+# Vereist: mod_rewrite, mod_headers, mod_expires; mod_brotli of mod_deflate optioneel.
+# =====================================================================
+
+Options -Indexes -MultiViews
+DirectoryIndex index.html
+ErrorDocument 404 /404.html
+AddDefaultCharset utf-8
+AddType application/manifest+json .webmanifest
+AddType image/webp .webp
+AddType font/woff2 .woff2
+
+RewriteEngine On
+
+# --- 1. Oude WordPress-adressen -> nieuwe pagina's (301, in één stap naar https) ---
+# Juridisch
+RewriteRule ^blog/wpautoterms/privacy-policy/?$ https://stormboekhouders.nl/privacy.html [R=301,L,NC]
+RewriteRule ^blog/wpautoterms/?$ https://stormboekhouders.nl/privacy.html [R=301,L,NC]
+RewriteRule ^privacy-policy/?$ https://stormboekhouders.nl/privacy.html [R=301,L,NC]
+# Dienstenpagina's -> sectie Diensten op de homepage
+RewriteRule ^online-boekhouding/administratie-online/?$ https://stormboekhouders.nl/#diensten [R=301,L,NE,NC]
+RewriteRule ^online-boekhouding/belastingen-en-aangiftes/?$ https://stormboekhouders.nl/#diensten [R=301,L,NE,NC]
+RewriteRule ^online-boekhouding/online-rapportages/?$ https://stormboekhouders.nl/#diensten [R=301,L,NE,NC]
+RewriteRule ^online-boekhouding/?$ https://stormboekhouders.nl/#diensten [R=301,L,NE,NC]
+# Blog, berichten, categorieen, tags, auteur (blog verdwijnt) -> homepage
+RewriteRule ^blog(/.*)?$ https://stormboekhouders.nl/ [R=301,L,NC]
+RewriteRule ^(category|tag|author)/ https://stormboekhouders.nl/ [R=301,L,NC]
+# WordPress-restanten -> homepage (feeds, sitemaps van Yoast)
+RewriteRule ^(feed|comments/feed)/?$ https://stormboekhouders.nl/ [R=301,L,NC]
+RewriteRule ^(sitemap_index|page-sitemap|post-sitemap|category-sitemap|post_tag-sitemap|author-sitemap)\.xml$ https://stormboekhouders.nl/sitemap.xml [R=301,L,NC]
+RewriteRule ^(wp-admin|wp-login\.php|wp-content|wp-includes|xmlrpc\.php|wp-json) - [G,L,NC]
+
+# --- 2. Eén canoniek adres: https://stormboekhouders.nl (zonder www) ---
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^ https://stormboekhouders.nl%{REQUEST_URI} [R=301,L,NE]
+
+# /index.html -> /
+RewriteCond %{THE_REQUEST} \s/index\.html[\s?] [NC]
+RewriteRule ^index\.html$ https://stormboekhouders.nl/ [R=301,L]
+
+# --- 3. Beveiligingsheaders ---
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set X-Frame-Options "DENY"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header always set Cross-Origin-Opener-Policy "same-origin"
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests"
+  Header always unset X-Powered-By
+  Header unset X-Powered-By
+</IfModule>
+
+# --- 4. Compressie ---
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml application/javascript application/json application/xml application/manifest+json image/svg+xml
+</IfModule>
+<IfModule !mod_brotli.c>
+  <IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/javascript application/json application/xml application/manifest+json image/svg+xml
+  </IfModule>
+</IfModule>
+
+# --- 5. Caching ---
+# HTML altijd verversen; CSS/JS hebben ?v=versie in de URL en mogen een jaar in de cache.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 1 week"
+  ExpiresByType text/html "access plus 0 seconds"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+  ExpiresByType image/x-icon "access plus 1 month"
+  ExpiresByType application/manifest+json "access plus 1 week"
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+  <FilesMatch "\.(css|js|woff2|svg|webp)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.php$">
+    Header set Cache-Control "no-store"
+  </FilesMatch>
+</IfModule>
+
+# --- 6. Afschermen ---
+<FilesMatch "^\.|\.(bak|log|md|txt|ini|sh|py)$">
+  Require all denied
+</FilesMatch>
+<Files "robots.txt">
+  Require all granted
+</Files>

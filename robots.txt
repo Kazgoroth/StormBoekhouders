@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /verzenden.php
+Disallow: /bedankt.html
+
+Sitemap: https://stormboekhouders.nl/sitemap.xml
