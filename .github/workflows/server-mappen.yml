@@ -1,0 +1,16 @@
+name: Mappen op one.com bekijken
+on:
+  workflow_dispatch:
+
+jobs:
+  mappen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Inhoud van webroots tonen (alleen lezen)
+        env:
+          HOST: ${{ secrets.ONECOM_HOST }}
+          USER: ${{ secrets.ONECOM_USER }}
+          PASS: ${{ secrets.ONECOM_PASSWORD }}
+        run: |
+          sudo apt-get install -y lftp
+          lftp -u "$USER","$PASS" sftp://$HOST -e "set sftp:auto-confirm yes; cd webroots; pwd; cls -la; find --maxdepth=2 .; bye"
