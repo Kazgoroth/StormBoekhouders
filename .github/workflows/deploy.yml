@@ -16,4 +16,4 @@ jobs:
           PASS: ${{ secrets.ONECOM_PASSWORD }}
         run: |
           sudo apt-get install -y lftp
-          lftp -u "$USER","$PASS" sftp://$HOST -e "set sftp:auto-confirm yes; mirror -R --verbose --exclude '^\.git' --exclude README.md ./ www/; bye"
+          lftp -u "$USER","$PASS" sftp://$HOST -e "set sftp:auto-confirm yes; set cmd:fail-exit yes; cls -la; cd httpd.www; mirror -R --verbose --exclude '^\.git' --exclude README.md ./ ./; bye"
